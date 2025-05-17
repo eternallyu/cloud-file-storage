@@ -1,4 +1,4 @@
-package ru.eternallyu.newproject;
+package ru.eternallyu.cloudfilestorage;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
