@@ -14,13 +14,13 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: login
-                  type: varchar(50)
+                  name: username
+                  type: varchar(256)
                   constraints:
                     unique: true
                     nullable: false
               - column:
                   name: password
-                  type: varchar(50)
+                  type: varchar(256)
                   constraints:
                     nullable: false

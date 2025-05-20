@@ -2,6 +2,7 @@ package ru.eternallyu.cloudfilestorage.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ru.eternallyu.cloudfilestorage.dto.request.UserRequestDto;
@@ -17,16 +18,16 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final UserMapper userMapper;
-
     private final PasswordEncoder passwordEncoder;
+
+    private final UserMapper userMapper;
 
     public UserResponseDto saveUser(UserRequestDto userRequestDto) {
 
         String encode = passwordEncoder.encode(userRequestDto.getPassword());
-        userRequestDto.setPassword(encode);
+        userRequestDto = new UserRequestDto(userRequestDto.getUsername(), encode);
 
-        User user = userMapper.toEntity(userRequestDto);
+        User user = userMapper.toUser(userRequestDto);
 
         User savedUser;
 
@@ -36,6 +37,11 @@ public class UserService {
             throw new UserAlreadyExistsException("User already exists.");
         }
 
-        return userMapper.toDto(savedUser);
+        return userMapper.toUserResponseDto(savedUser);
+    }
+
+    public UserResponseDto findByLogin(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+        return userMapper.toUserResponseDto(user);
     }
 }

@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Builder
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponseDto {
+public class ErrorResponseDto {
 
-    private Integer id;
-
-    private String username;
+    public String message;
 }

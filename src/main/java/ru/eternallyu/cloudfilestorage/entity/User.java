@@ -1,16 +1,14 @@
 package ru.eternallyu.cloudfilestorage.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
+@Setter
+@Builder
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Table(name = "users")
 public class User {
 
@@ -19,7 +17,7 @@ public class User {
     private Integer id;
 
     @Column(unique = true, nullable = false)
-    private String login;
+    private String username;
 
     @Column(nullable = false)
     private String password;

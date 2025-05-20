@@ -1,13 +1,24 @@
 package ru.eternallyu.cloudfilestorage.mapper;
 
-import org.mapstruct.Mapper;
+import org.springframework.stereotype.Component;
 import ru.eternallyu.cloudfilestorage.dto.request.UserRequestDto;
 import ru.eternallyu.cloudfilestorage.dto.response.UserResponseDto;
 import ru.eternallyu.cloudfilestorage.entity.User;
 
-@Mapper
-public interface UserMapper {
-    User toEntity(UserRequestDto userRequestDto);
+@Component
+public class UserMapper {
 
-    UserResponseDto toDto(User savedUser);
+    public User toUser(UserRequestDto userRequestDto) {
+        return User.builder()
+                .username(userRequestDto.getUsername())
+                .password(userRequestDto.getPassword())
+                .build();
+    }
+
+    public UserResponseDto toUserResponseDto(User user) {
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .build();
+    }
 }
