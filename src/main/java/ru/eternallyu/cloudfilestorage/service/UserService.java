@@ -40,7 +40,7 @@ public class UserService {
         return userMapper.toUserResponseDto(savedUser);
     }
 
-    public UserResponseDto findByLogin(String username) {
+    public UserResponseDto findByUsername(String username) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return userMapper.toUserResponseDto(user);
     }

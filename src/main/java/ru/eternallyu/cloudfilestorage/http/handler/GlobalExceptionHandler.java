@@ -49,6 +49,7 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponseDto("Access denied"));
     }
 
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleAllOtherExceptions(Exception exception) {
         return ResponseEntity

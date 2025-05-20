@@ -40,8 +40,8 @@ public class AuthenticationController {
 
     @PostMapping("/sign-in")
     public ResponseEntity<UserResponseDto> signIn(@Valid @RequestBody UserRequestDto userRequestDto,
-                                                 HttpServletRequest request,
-                                                 HttpServletResponse response) {
+                                                  HttpServletRequest request,
+                                                  HttpServletResponse response) {
         Authentication auth = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(), userRequestDto.getPassword()));
         SecurityContext context = securityContextHolderStrategy.createEmptyContext();
@@ -50,6 +50,6 @@ public class AuthenticationController {
 
         securityContextRepository.saveContext(context, request, response);
 
-        return ResponseEntity.ok(userService.findByLogin(userRequestDto.getUsername()));
+        return ResponseEntity.ok(userService.findByUsername(userRequestDto.getUsername()));
     }
 }
