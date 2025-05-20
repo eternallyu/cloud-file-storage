@@ -34,14 +34,14 @@ public class UserService {
         try {
             savedUser = userRepository.save(user);
         } catch (DataIntegrityViolationException exception) {
-            throw new UserAlreadyExistsException("User already exists.");
+            throw new UserAlreadyExistsException("User already exists");
         }
 
         return userMapper.toUserResponseDto(savedUser);
     }
 
     public UserResponseDto findByLogin(String username) {
-        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found."));
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return userMapper.toUserResponseDto(user);
     }
 }

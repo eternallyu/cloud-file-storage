@@ -38,8 +38,8 @@ public class AuthenticationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveUser(userRequestDto));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<UserResponseDto> login(@Valid @RequestBody UserRequestDto userRequestDto,
+    @PostMapping("/sign-in")
+    public ResponseEntity<UserResponseDto> signIn(@Valid @RequestBody UserRequestDto userRequestDto,
                                                  HttpServletRequest request,
                                                  HttpServletResponse response) {
         Authentication auth = authenticationManager
