@@ -16,14 +16,14 @@ import java.io.IOException;
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ObjectMapper objectMapper;
-    private static final ErrorResponseDto AUTH_ERROR =
-            new ErrorResponseDto("User is not authenticated");
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
 
-        objectMapper.writeValue(response.getWriter(), AUTH_ERROR);
+        ErrorResponseDto errorJsonModel = new ErrorResponseDto(authException.getMessage());
+
+        objectMapper.writeValue(response.getWriter(), errorJsonModel);
     }
 }
