@@ -4,7 +4,7 @@ spring:
   datasource:
     password: password
     username: db_user
-    url: jdbc:postgresql://localhost:5480/cloud_storage
+    url: jdbc:postgresql://localhost:5442/cloud_storage
     driver-class-name: org.postgresql.Driver
   jpa:
     properties.hibernate:

@@ -1,5 +1,5 @@
 services:
-  db:
+  database:
     image: postgres:17
     container_name: postgres
     restart: always
@@ -8,9 +8,11 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: cloud_storage
     ports:
-      - "5480:5432"
-    volumes:
-      - postgres_volume:/var/lib/postgresql/data
+      - "5442:5432"
+    networks:
+      - application-network
 
-volumes:
-  postgres_volume:
+networks:
+  application-network:
+    name: application-network
+    driver: bridge
