@@ -2,16 +2,21 @@ spring:
   application:
     name: cloud-file-storage
   datasource:
-    password: password
     username: db_user
+    password: password
     url: jdbc:postgresql://localhost:5442/cloud_storage
     driver-class-name: org.postgresql.Driver
   jpa:
     properties.hibernate:
       show_sql: true
       format_sql: true
-      hbm2ddl:
-        auto: validate
+      hbm2ddl.auto: validate
+
+minio:
+  url: http://localhost:9000
+  access-key: minio_user
+  secret-key: password
+  bucket: user-files
 
 server:
   port: 8090
