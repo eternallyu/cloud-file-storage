@@ -1,6 +1,7 @@
 package ru.eternallyu.cloudfilestorage.repository;
 
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -9,12 +10,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.multipart.MultipartFile;
 import ru.eternallyu.cloudfilestorage.config.minio.MinioProperties;
+import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.entity.User;
+import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
 import ru.eternallyu.cloudfilestorage.error.StorageException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -22,6 +27,8 @@ import java.util.zip.ZipOutputStream;
 @Repository
 @RequiredArgsConstructor
 public class MinioRepository {
+
+    public static final int DEFAULT_DIRECTORY_SIZE = 0;
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
@@ -101,6 +108,12 @@ public class MinioRepository {
                             .object(path)
                             .build())
             );
+        } catch (ErrorResponseException exception) {
+
+            if ("NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("File '" + path + "' not found");
+            }
+            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
         } catch (Exception exception) {
             throw new StorageException("Error during download file: " + exception.getMessage());
         }
@@ -114,8 +127,14 @@ public class MinioRepository {
                             .object(path)
                             .build()
             );
+        } catch (ErrorResponseException exception) {
+
+            if ("NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("File '" + path + "' not found");
+            }
+            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
         } catch (Exception exception) {
-            throw new StorageException("Error during delete file: " + exception.getMessage());
+            throw new StorageException("Error during download file: " + exception.getMessage());
         }
     }
 
@@ -141,8 +160,14 @@ public class MinioRepository {
                             .object(newPath)
                             .build()
             );
+        } catch (ErrorResponseException exception) {
+
+            if ("NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("File '" + oldPath + "' not found");
+            }
+            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
         } catch (Exception exception) {
-            throw new StorageException("Error during rename file: " + exception.getMessage());
+            throw new StorageException("Error during download file: " + exception.getMessage());
         }
         deleteFile(oldPath);
     }
@@ -214,10 +239,117 @@ public class MinioRepository {
             byte[] zipBytes = byteArrayOutputStream.toByteArray();
 
             return new InputStreamResource(new ByteArrayInputStream(zipBytes));
+        } catch (ErrorResponseException exception) {
+
+            if ("NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("File '" + path + "' not found");
+            }
+            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
         } catch (Exception exception) {
-            throw new StorageException("Error during download folder: " + exception.getMessage());
+            throw new StorageException("Error during download file: " + exception.getMessage());
         }
     }
+
+    public FileInfoDto getResourceInfo(String path) {
+        boolean isDirectory = isDirectory(path);
+
+        try {
+            StatObjectResponse statObjectArgs = minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(minioProperties.getBucket())
+                    .object(path)
+                    .build());
+
+            String parentPath = getParentPath(path);
+            String name = getFileName(path, isDirectory);
+
+            return new FileInfoDto(parentPath,
+                    name,
+                    isDirectory ? DEFAULT_DIRECTORY_SIZE : statObjectArgs.size(),
+                    isDirectory ? "DIRECTORY" : "FILE");
+        } catch (ErrorResponseException exception) {
+
+            if ("NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("File '" + path + "' not found");
+            }
+            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
+        } catch (Exception exception) {
+            throw new StorageException("Error during download file: " + exception.getMessage());
+        }
+    }
+
+    private static String getFileName(String path, boolean isDirectory) {
+        return isDirectory ?
+                path.substring(path.lastIndexOf("/") + 1)
+                : path.substring(getParentPath(path).length());
+    }
+
+    private static String getParentPath(String path) {
+        return path.substring(0, path.lastIndexOf("/") + 1);
+    }
+
+    private static boolean isDirectory(String path) {
+        return path.endsWith("/");
+    }
+
+    public List<FileInfoDto> searchInUserSpace(String query, String username) {
+
+        String userPathPrefix = getUserRootFolderName(username);
+
+        List<FileInfoDto> fileInfoDtos = new ArrayList<>();
+
+        try {
+            Iterable<Result<Item>> allItems = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .prefix(userPathPrefix)
+                            .recursive(true)
+                            .build()
+            );
+
+            for (Result<Item> result : allItems) {
+                Item item = result.get();
+                String fullObjectName = item.objectName();
+
+                boolean isDirectory = isDirectory(fullObjectName);
+
+                String relative = fullObjectName.substring(userPathPrefix.length());
+
+                String namePart = getNamePart(isDirectory, relative);
+
+                if (namePart.toLowerCase().contains(query.toLowerCase())) {
+                    int lastSlash = relative.lastIndexOf('/');
+                    String parentRelativePath = (lastSlash >= 0)
+                            ? relative.substring(0, lastSlash + 1)
+                            : "";
+
+                    FileInfoDto dto = FileInfoDto.builder()
+                            .path(parentRelativePath)
+                            .name(namePart)
+                            .size(isDirectory ? null : item.size())
+                            .type(isDirectory ? "DIRECTORY" : "FILE")
+                            .build();
+
+                    fileInfoDtos.add(dto);
+                }
+            }
+        } catch (Exception e) {
+            throw new StorageException("Error during search in user space: " + e.getMessage());
+        }
+
+        return fileInfoDtos;
+    }
+
+    private static String getNamePart(boolean isDirectory, String relative) {
+        String namePart;
+        if (isDirectory) {
+            String withoutSlash = relative.substring(0, relative.length() - 1);
+            namePart = withoutSlash.substring(withoutSlash.lastIndexOf('/') + 1);
+        } else {
+            namePart = relative.substring(relative.lastIndexOf('/') + 1);
+        }
+        return namePart;
+    }
+
 
     private String getUserRootFolderName(String name) {
         Optional<User> user = userRepository.findByUsername(name);
