@@ -1,12 +1,13 @@
 package ru.eternallyu.cloudfilestorage.http.handler;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.eternallyu.cloudfilestorage.dto.response.ErrorResponseDto;
 import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
@@ -15,44 +16,47 @@ import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponseDto> handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(new ErrorResponseDto(exception.getMessage()));
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseBody
+    ErrorResponseDto
+    handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
+        return new ErrorResponseDto(exception.getMessage());
     }
 
-    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
-    public ResponseEntity<ErrorResponseDto> handleBadCredentialsException(BadCredentialsException exception) {
-        Throwable cause = exception.getCause();
-        if (cause instanceof UsernameNotFoundException) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponseDto(exception.getMessage()));
-        }
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponseDto("Invalid password"));
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    ErrorResponseDto
+    handleAllOtherExceptions(Exception exception) {
+        return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValidException() {
-        return ResponseEntity
-                .badRequest()
-                .body(new ErrorResponseDto("Username and password must be between 5 and 20 characters"));
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    ErrorResponseDto
+    handleMethodArgumentNotValidException() {
+        return new ErrorResponseDto("Username and password must be between 5 and 20 characters");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponseDto> handleAccessDeniedException(AccessDeniedException e) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponseDto("Access denied"));
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseBody
+    ErrorResponseDto
+    handleAccessDeniedException() {
+        return new ErrorResponseDto("Access denied");
     }
 
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseBody
+    ErrorResponseDto
+    handleBadCredentialsException(BadCredentialsException exception) {
+        Throwable cause = exception.getCause();
+        if (cause instanceof UsernameNotFoundException) {
+            return new ErrorResponseDto(exception.getMessage());
+        }
+        return new ErrorResponseDto("Invalid password");
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleAllOtherExceptions(Exception exception) {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponseDto(exception.getMessage()));
     }
 }
