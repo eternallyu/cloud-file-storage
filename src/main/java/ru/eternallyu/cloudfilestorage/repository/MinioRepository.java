@@ -56,7 +56,7 @@ public class MinioRepository {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(minioProperties.getBucket())
-                            .object(fullPath)                                  // полный ключ, напр.: "user-42-files/docs/subdir/"
+                            .object(fullPath)
                             .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
                             .contentType("application/x-directory")
                             .build()

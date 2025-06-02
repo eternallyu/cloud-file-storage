@@ -17,9 +17,7 @@ import ru.eternallyu.cloudfilestorage.repository.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
-
     private final UserMapper userMapper;
 
     public UserResponseDto saveUser(UserRequestDto userRequestDto) {
@@ -30,7 +28,6 @@ public class UserService {
         User user = userMapper.toUser(userRequestDto);
 
         User savedUser;
-
         try {
             savedUser = userRepository.save(user);
         } catch (DataIntegrityViolationException exception) {
