@@ -1,5 +1,6 @@
 package ru.eternallyu.cloudfilestorage.security;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
 
+    @Getter
     private final Integer id;
 
     private final String username;
@@ -37,4 +39,5 @@ public class CustomUserDetails implements UserDetails {
     public String getUsername() {
         return this.username;
     }
+
 }

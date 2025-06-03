@@ -242,9 +242,9 @@ public class MinioRepository {
         } catch (ErrorResponseException exception) {
 
             throwResourceNotFoundExceptionIfNotFound(path, exception);
-            throw new StorageException("MinIO error during downloadFile: " + exception.errorResponse().message());
+            throw new StorageException("MinIO error during getting file: " + exception.errorResponse().message());
         } catch (Exception exception) {
-            throw new StorageException("Error during download file: " + exception.getMessage());
+            throw new StorageException("Error during getting file: " + exception.getMessage());
         }
     }
 
@@ -289,8 +289,8 @@ public class MinioRepository {
                     fileInfoDtos.add(dto);
                 }
             }
-        } catch (Exception e) {
-            throw new StorageException("Error during search in user space: " + e.getMessage());
+        } catch (Exception exception) {
+            throw new StorageException("Error during search in user space: " + exception.getMessage());
         }
 
         return fileInfoDtos;
@@ -308,7 +308,7 @@ public class MinioRepository {
     }
 
 
-    private String getUserRootFolderName(String name) {
+    public String getUserRootFolderName(String name) {
         Optional<User> user = userRepository.findByUsername(name);
         if (user.isPresent()) {
             Integer userId = user.get().getId();

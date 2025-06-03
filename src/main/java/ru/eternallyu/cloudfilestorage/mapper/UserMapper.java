@@ -18,6 +18,7 @@ public class UserMapper {
     public UserResponseDto toUserResponseDto(User user) {
         return UserResponseDto.builder()
                 .username(user.getUsername())
+                .id(user.getId())
                 .build();
     }
 }

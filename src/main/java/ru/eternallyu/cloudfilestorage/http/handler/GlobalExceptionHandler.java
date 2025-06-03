@@ -10,10 +10,29 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.eternallyu.cloudfilestorage.dto.response.ErrorResponseDto;
+import ru.eternallyu.cloudfilestorage.error.BadRequestException;
+import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
+import ru.eternallyu.cloudfilestorage.error.StorageException;
 import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(StorageException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    ErrorResponseDto
+    handleStorageException(StorageException exception) {
+        return new ErrorResponseDto(exception.getMessage());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    ErrorResponseDto
+    resourceNotFound(ResourceNotFoundException exception) {
+        return new ErrorResponseDto(exception.getMessage());
+    }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
@@ -57,6 +76,13 @@ public class GlobalExceptionHandler {
             return new ErrorResponseDto(exception.getMessage());
         }
         return new ErrorResponseDto("Invalid password");
+    }
 
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    ErrorResponseDto
+    handleBadRequestException(BadRequestException exception) {
+        return new ErrorResponseDto(exception.getMessage());
     }
 }

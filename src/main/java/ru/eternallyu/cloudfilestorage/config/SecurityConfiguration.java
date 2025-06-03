@@ -48,11 +48,26 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .authenticationProvider(authenticationProvider())
                 .csrf(CsrfConfigurer::disable)
+
+                .authenticationProvider(authenticationProvider())
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/sign-in", "api/auth/sign-up").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/config.js",
+                                "/favicon.ico",
+                                "/css/**",
+                                "/js/**",
+                                "/assets/**"
+                        ).permitAll()
+
+                        .requestMatchers("/api/auth/sign-in", "/api/auth/sign-up").permitAll()
+
+                        .requestMatchers("/api/**").authenticated()
+
+                        .anyRequest().permitAll()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
@@ -62,14 +77,13 @@ public class SecurityConfiguration {
                         .clearAuthentication(true)
                         .invalidateHttpSession(true)
                         .deleteCookies("SESSION")
-                        .logoutSuccessHandler(logoutSuccessHandler(authenticationEntryPoint)))
+                        .logoutSuccessHandler(logoutSuccessHandler(authenticationEntryPoint))
+                )
                 .build();
     }
 
     @Bean
-    public LogoutSuccessHandler logoutSuccessHandler(
-            CustomAuthenticationEntryPoint entryPoint
-    ) {
+    public LogoutSuccessHandler logoutSuccessHandler(CustomAuthenticationEntryPoint entryPoint) {
         return (req, res, auth) -> {
             if (auth == null || auth instanceof AnonymousAuthenticationToken) {
                 entryPoint.commence(req, res,
@@ -80,7 +94,6 @@ public class SecurityConfiguration {
             }
         };
     }
-
 
     @Bean
     public SecurityContextRepository securityContextRepository() {
