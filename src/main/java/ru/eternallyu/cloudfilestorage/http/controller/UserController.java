@@ -15,7 +15,7 @@ public class UserController {
     @GetMapping("/me")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    UserResponseDto me(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+    UserResponseDto getUserInfo(@AuthenticationPrincipal CustomUserDetails customUserDetails) {
         return new UserResponseDto(customUserDetails.getUsername(), customUserDetails.getId());
     }
 }

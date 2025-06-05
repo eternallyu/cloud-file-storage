@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.eternallyu.cloudfilestorage.config.minio.MinioProperties;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.entity.User;
+import ru.eternallyu.cloudfilestorage.error.ResourceAlreadyExistsException;
 import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
 import ru.eternallyu.cloudfilestorage.error.StorageException;
 
@@ -52,6 +53,8 @@ public class MinioRepository {
     }
 
     public void createDirectory(String fullPath) {
+        checkEmptinessOfPath(fullPath);
+
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -68,6 +71,9 @@ public class MinioRepository {
 
 
     public void uploadFile(String path, MultipartFile file) {
+
+        checkEmptinessOfPath(path);
+
         try (InputStream inputStream = file.getInputStream()) {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -126,6 +132,20 @@ public class MinioRepository {
     }
 
     public void renameFile(String oldPath, String newPath) {
+        checkEmptinessOfPath(newPath);
+
+        try {
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(minioProperties.getBucket())
+                    .object(oldPath)
+                    .build());
+        } catch (ErrorResponseException exception) {
+            throwResourceNotFoundExceptionIfNotFound(oldPath, exception);
+            throw new StorageException("MinIO error: " + exception.errorResponse().message());
+        } catch (Exception exception) {
+            throw new StorageException("Error checking old path: " + exception.getMessage());
+        }
+
         try {
             minioClient.copyObject(
                     CopyObjectArgs.builder()
@@ -296,7 +316,7 @@ public class MinioRepository {
         return fileInfoDtos;
     }
 
-    private static String getNamePart(boolean isDirectory, String relative) {
+    public static String getNamePart(boolean isDirectory, String relative) {
         String namePart;
         if (isDirectory) {
             String withoutSlash = relative.substring(0, relative.length() - 1);
@@ -338,6 +358,24 @@ public class MinioRepository {
     private static void throwResourceNotFoundExceptionIfNotFound(String path, ErrorResponseException exception) {
         if ("NoSuchKey".equals(exception.errorResponse().code())) {
             throw new ResourceNotFoundException("File '" + path + "' not found");
+        }
+    }
+
+    private void checkEmptinessOfPath(String newPath) {
+        try {
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(minioProperties.getBucket())
+                    .object(newPath)
+                    .build()
+            );
+
+            throw new ResourceAlreadyExistsException("Resource already exists");
+        } catch (ErrorResponseException exception) {
+            if (!"NoSuchKey".equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("Minio error: " + exception.errorResponse().message());
+            }
+        } catch (Exception exception) {
+            throw new StorageException("Error checking new path: " + exception.getMessage());
         }
     }
 }

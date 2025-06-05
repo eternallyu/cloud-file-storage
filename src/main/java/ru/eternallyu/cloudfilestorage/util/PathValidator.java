@@ -15,4 +15,10 @@ public class PathValidator {
             throw new BadRequestException("The file path is invalid");
         }
     }
+
+    public static void validateQuery(String query) {
+        if (query == null || query.isBlank()) {
+            throw new BadRequestException("The query is blank");
+        }
+    }
 }

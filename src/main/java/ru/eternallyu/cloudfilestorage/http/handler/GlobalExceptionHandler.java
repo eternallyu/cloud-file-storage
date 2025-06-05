@@ -10,10 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.eternallyu.cloudfilestorage.dto.response.ErrorResponseDto;
-import ru.eternallyu.cloudfilestorage.error.BadRequestException;
-import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
-import ru.eternallyu.cloudfilestorage.error.StorageException;
-import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
+import ru.eternallyu.cloudfilestorage.error.*;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -39,6 +36,14 @@ public class GlobalExceptionHandler {
     @ResponseBody
     ErrorResponseDto
     handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
+        return new ErrorResponseDto(exception.getMessage());
+    }
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseBody
+    ErrorResponseDto
+    handleResourceAlreadyExistsException(ResourceAlreadyExistsException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
