@@ -83,7 +83,7 @@ public class SecurityConfiguration {
         return (req, res, auth) -> {
             if (auth == null || auth instanceof AnonymousAuthenticationToken) {
                 entryPoint.commence(req, res,
-                        new InsufficientAuthenticationException("User is not authenticated")
+                        new InsufficientAuthenticationException("Пользователь не авторизован")
                 );
             } else {
                 res.setStatus(HttpServletResponse.SC_NO_CONTENT);

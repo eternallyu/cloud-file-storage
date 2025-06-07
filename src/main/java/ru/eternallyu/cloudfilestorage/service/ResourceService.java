@@ -41,7 +41,11 @@ public class ResourceService {
         if (!fullPath.startsWith(userRoot)) {
             throw new ResourceNotFoundException("Ресурс не найден");
         }
-        minioRepository.deleteFile(fullPath);
+        if (relativePath.endsWith("/")) {
+            minioRepository.deleteFolder(fullPath);
+        } else {
+            minioRepository.deleteFile(fullPath);
+        }
     }
 
     public InputStreamResource downloadFile(String relativePath, String username) {
@@ -84,27 +88,34 @@ public class ResourceService {
         return minioRepository.searchInUserSpace(query, username);
     }
 
-    public List<FileInfoDto> uploadResource(MultipartFile file, String relativeDir, String username) {
-        validatePath(relativeDir);
+    public List<FileInfoDto> uploadResources(List<MultipartFile> file, String relativeDir, String username) {
+
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullDir = userRoot + relativeDir;
         if (!fullDir.startsWith(userRoot)) {
             throw new ResourceNotFoundException("Ресурс не найден");
         }
-        String originalName = file.getOriginalFilename();
-        if (originalName == null || originalName.isBlank()) {
-            throw new BadRequestException("Имя файла пустое");
-        }
-        String fullPath = fullDir + originalName;
-        minioRepository.uploadFile(fullPath, file);
 
         List<FileInfoDto> result = new ArrayList<>();
-        if (originalName.contains("/")) {
-            String subDirRelative = originalName.substring(0, originalName.indexOf('/') + 1);
-            String fullSubDir = fullDir + subDirRelative;
-            result.add(minioRepository.getResourceInfo(fullSubDir));
+        for (MultipartFile fileItem : file) {
+            String originalName = fileItem.getOriginalFilename();
+            if (originalName == null || originalName.isBlank()) {
+                throw new BadRequestException("Имя файла пустое");
+            }
+            String fullPath = fullDir + originalName;
+            if (originalName.contains("/")) {
+                String[] parts = originalName.split("/");
+                String accum = fullDir;
+                for (int i = 0; i < parts.length - 1; i++) {
+                    accum += parts[i] + "/";
+                    minioRepository.createDirectory(accum);
+                    result.add(minioRepository.getResourceInfo(accum));
+                }
+            }
+
+            minioRepository.uploadFile(fullPath, fileItem);
+            result.add(minioRepository.getResourceInfo(fullPath));
         }
-        result.add(minioRepository.getResourceInfo(fullPath));
         return result;
     }
 }

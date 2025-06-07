@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import ru.eternallyu.cloudfilestorage.dto.response.ErrorResponseDto;
 import ru.eternallyu.cloudfilestorage.error.*;
 
@@ -53,6 +54,14 @@ public class GlobalExceptionHandler {
     ErrorResponseDto
     handleAllOtherExceptions(Exception exception) {
         return new ErrorResponseDto(exception.getMessage());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    @ResponseBody
+    ErrorResponseDto
+    handleMaxUploadSizeExceededException() {
+        return new ErrorResponseDto("Размер файла слишком большой");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

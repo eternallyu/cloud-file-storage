@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.security.CustomUserDetails;
@@ -44,17 +45,19 @@ public class FileController {
         resourceService.deleteFile(path, username);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @ResponseBody
-    List<FileInfoDto>
-    createFile(
-            @RequestParam String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            @RequestPart("file") MultipartFile file
+    public List<FileInfoDto> createFile(
+            @RequestParam("path") String path,
+            @RequestPart("object") List<MultipartFile> file,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
+        long maxFileSize = 5 * 1024 * 1024;
+        if (file.size() > maxFileSize) {
+            throw new MaxUploadSizeExceededException(maxFileSize);
+        }
         String username = customUserDetails.getUsername();
-        return resourceService.uploadResource(file, path, username);
+        return resourceService.uploadResources(file, path, username);
     }
 
 

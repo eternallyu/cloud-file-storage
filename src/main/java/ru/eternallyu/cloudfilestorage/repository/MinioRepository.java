@@ -124,6 +124,33 @@ public class MinioRepository {
         }
     }
 
+    public void deleteFolder(String prefix) {
+        try {
+            Iterable<Result<Item>> results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .prefix(prefix)
+                            .recursive(true)
+                            .build()
+            );
+
+            for (Result<Item> result : results) {
+                String objectName = result.get().objectName();
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(minioProperties.getBucket())
+                                .object(objectName)
+                                .build()
+                );
+            }
+        } catch (ErrorResponseException e) {
+            throwResourceNotFoundExceptionIfNotFound(prefix, e);
+            throw new StorageException("MinIO error during deleteFolder: " + e.errorResponse().message());
+        } catch (Exception e) {
+            throw new StorageException("Error during deleteFolder: " + e.getMessage());
+        }
+    }
+
     public void deleteFile(String path) {
         try {
             minioClient.removeObject(
@@ -335,6 +362,10 @@ public class MinioRepository {
                 Item item = result.get();
                 String fullObjectName = item.objectName();
 
+                if (userPathPrefix.equals(fullObjectName)) {
+                    continue;
+                }
+
                 boolean isDirectory = isDirectory(fullObjectName);
 
                 String relative = fullObjectName.substring(userPathPrefix.length());
@@ -417,13 +448,15 @@ public class MinioRepository {
                     .build()
             );
 
-            throw new ResourceAlreadyExistsException("Resource already exists");
+            throw new ResourceAlreadyExistsException("Файл уже существует");
         } catch (ErrorResponseException exception) {
             if (!NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
-                throw new ResourceNotFoundException("Minio error: " + exception.errorResponse().message());
+                throw new ResourceNotFoundException("Ошибка: " + exception.errorResponse().message());
             }
+        } catch (ResourceAlreadyExistsException exception) {
+            throw new ResourceAlreadyExistsException(exception.getMessage());
         } catch (Exception exception) {
-            throw new StorageException("Error checking new path: " + exception.getMessage());
+            throw new StorageException("Ошибка: " + exception.getMessage());
         }
     }
 
