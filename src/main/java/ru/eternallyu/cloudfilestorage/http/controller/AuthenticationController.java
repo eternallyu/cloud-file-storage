@@ -19,17 +19,21 @@ public class AuthenticationController {
 
     @PostMapping("/sign-up")
     @ResponseStatus(HttpStatus.CREATED)
-    @ResponseBody
-    UserResponseDto signUp(@Valid @RequestBody UserRequestDto userRequestDto) {
-        return authService.signUp(userRequestDto);
+    public UserResponseDto signUp(
+            @Valid @RequestBody UserRequestDto userRequestDto,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        return authService.signUp(userRequestDto, request, response);
     }
 
     @PostMapping("/sign-in")
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    UserResponseDto signIn(@Valid @RequestBody UserRequestDto userRequestDto,
-                           HttpServletRequest request,
-                           HttpServletResponse response) {
+    public UserResponseDto signIn(
+            @Valid @RequestBody UserRequestDto userRequestDto,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         return authService.signIn(userRequestDto, request, response);
     }
 }

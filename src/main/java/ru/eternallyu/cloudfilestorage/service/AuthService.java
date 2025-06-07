@@ -48,7 +48,13 @@ public class AuthService {
         return userService.findByUsername(userRequestDto.getUsername());
     }
 
-    public UserResponseDto signUp(UserRequestDto userRequestDto) {
+    public UserResponseDto signUp(
+            UserRequestDto userRequestDto,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+
+        String rawPassword = userRequestDto.getPassword();
 
         String encode = passwordEncoder.encode(userRequestDto.getPassword());
         userRequestDto = new UserRequestDto(userRequestDto.getUsername(), encode);
@@ -64,6 +70,10 @@ public class AuthService {
 
         minioRepository.createUserRootFolder(user.getUsername());
 
-        return userMapper.toUserResponseDto(savedUser);
+        return signIn(
+                new UserRequestDto(savedUser.getUsername(), rawPassword),
+                request,
+                response
+        );
     }
 }

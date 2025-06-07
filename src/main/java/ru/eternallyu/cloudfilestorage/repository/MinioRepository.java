@@ -29,7 +29,6 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class MinioRepository {
 
-    private static final String USER_PREFIX_FORMAT = "user-%d-files/";
     public static final String DIRECTORY = "DIRECTORY";
     public static final String FILE = "FILE";
     public static final String NO_SUCH_KEY_ERROR = "NoSuchKey";
@@ -272,9 +271,9 @@ public class MinioRepository {
                     if (!fullName.endsWith("/")) {
                         try (InputStream is = downloadFile(fullName).getInputStream()) {
                             byte[] buffer = new byte[8192];
-                            int length;
-                            while ((length = is.read(buffer)) > 0) {
-                                zip.write(buffer, 0, length);
+                            int len;
+                            while ((len = is.read(buffer)) > 0) {
+                                zip.write(buffer, 0, len);
                             }
                         }
                     }
@@ -381,7 +380,7 @@ public class MinioRepository {
         Optional<User> user = userRepository.findByUsername(name);
         if (user.isPresent()) {
             Integer userId = user.get().getId();
-            return String.format(USER_PREFIX_FORMAT, userId);
+            return String.format("user-%d-files/", userId);
         } else {
             throw new UsernameNotFoundException("User not found");
         }

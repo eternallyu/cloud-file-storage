@@ -47,11 +47,9 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+        http
                 .csrf(CsrfConfigurer::disable)
-
                 .authenticationProvider(authenticationProvider())
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/",
@@ -62,11 +60,8 @@ public class SecurityConfiguration {
                                 "/js/**",
                                 "/assets/**"
                         ).permitAll()
-
                         .requestMatchers("/api/auth/sign-in", "/api/auth/sign-up").permitAll()
-
                         .requestMatchers("/api/**").authenticated()
-
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(ex -> ex
@@ -78,9 +73,10 @@ public class SecurityConfiguration {
                         .invalidateHttpSession(true)
                         .deleteCookies("SESSION")
                         .logoutSuccessHandler(logoutSuccessHandler(authenticationEntryPoint))
-                )
-                .build();
+                );
+        return http.build();
     }
+
 
     @Bean
     public LogoutSuccessHandler logoutSuccessHandler(CustomAuthenticationEntryPoint entryPoint) {
