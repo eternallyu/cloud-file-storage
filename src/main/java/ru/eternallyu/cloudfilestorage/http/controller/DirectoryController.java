@@ -1,11 +1,13 @@
 package ru.eternallyu.cloudfilestorage.http.controller;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.security.CustomUserDetails;
+import ru.eternallyu.cloudfilestorage.service.DirectoryService;
 import ru.eternallyu.cloudfilestorage.service.ResourceService;
 
 import java.util.List;
@@ -15,18 +17,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DirectoryController {
 
-    private final ResourceService resourceService;
+    private final DirectoryService directoryService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     List<FileInfoDto>
     getDirectoryInfo(
-            @RequestParam String path,
+            @RequestParam(defaultValue = "") String path,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
         String username = customUserDetails.getUsername();
-        return resourceService.getDirectoryInfo(path, username);
+        return directoryService.getDirectoryInfo(path, username);
     }
 
     @PostMapping
@@ -34,10 +36,10 @@ public class DirectoryController {
     @ResponseBody
     FileInfoDto
     createEmptyDirectory(
-            @RequestParam String path,
+            @RequestParam @NotBlank String path,
             @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
         String username = customUserDetails.getUsername();
-        return resourceService.createEmptyDirectory(path, username);
+        return directoryService.createEmptyDirectory(path, username);
     }
 }

@@ -29,6 +29,11 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 public class MinioRepository {
 
+    private static final String USER_PREFIX_FORMAT = "user-%d-files/";
+    public static final String DIRECTORY = "DIRECTORY";
+    public static final String FILE = "FILE";
+    public static final String NO_SUCH_KEY_ERROR = "NoSuchKey";
+
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
 
@@ -50,6 +55,22 @@ public class MinioRepository {
             throw new StorageException("Error during creation bucket: " + exception.getMessage());
         }
 
+    }
+
+    public void createUserRootFolder(String username) {
+        String path = getUserRootFolderName(username);
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(minioProperties.getBucket())
+                            .object(path)
+                            .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                            .contentType("application/x-directory")
+                            .build()
+            );
+        } catch (Exception exception) {
+            throw new StorageException("Error during creation directory: " + exception.getMessage());
+        }
     }
 
     public void createDirectory(String fullPath) {
@@ -122,6 +143,8 @@ public class MinioRepository {
     }
 
     public Iterable<Result<Item>> getDirectoriesResources(String prefix) {
+        checkFileExistence(prefix);
+
         return minioClient.listObjects(
                 ListObjectsArgs.builder()
                         .bucket(minioProperties.getBucket())
@@ -130,6 +153,41 @@ public class MinioRepository {
                         .build()
         );
     }
+
+    public List<FileInfoDto> getFileInfoDtoList(String fullPath, String relativeDirPath) {
+
+        Iterable<Result<Item>> objectsInDir = getDirectoriesResources(fullPath);
+        List<FileInfoDto> result = new ArrayList<>();
+
+        for (Result<Item> maybeItem : objectsInDir) {
+            Item item;
+            try {
+                item = maybeItem.get();
+            } catch (Exception exception) {
+                throw new StorageException("Error during getFileInfoDtoList: " + exception.getMessage());
+            }
+
+            String fullObjectName = item.objectName();
+            if (fullObjectName.equals(fullPath)) continue;
+
+            boolean isDirectory = fullObjectName.endsWith("/");
+
+            String namePart = fullObjectName
+                    .substring(fullPath.length());
+
+            Long sizeOrNull = isDirectory ? null : item.size();
+            String type = isDirectory ? DIRECTORY : FILE;
+
+            result.add(FileInfoDto.builder()
+                    .path(relativeDirPath)
+                    .name(namePart)
+                    .size(sizeOrNull)
+                    .type(type)
+                    .build());
+        }
+        return result;
+    }
+
 
     public void renameFile(String oldPath, String newPath) {
         checkEmptinessOfPath(newPath);
@@ -200,40 +258,31 @@ public class MinioRepository {
             );
 
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            try (ZipOutputStream zip = new ZipOutputStream(byteArrayOutputStream)) {
+                for (Result<Item> itemResult : results) {
+                    Item item = itemResult.get();
+                    String fullName = item.objectName();
+                    String relativeName = fullName.substring(path.length());
 
-            try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
-                for (Result<Item> result : results) {
-                    Item item = result.get();
-                    String fullObjectName = item.objectName();
-                    String relativeObjectName = fullObjectName.substring(path.length());
+                    if (relativeName.isEmpty()) continue;
 
-                    if (fullObjectName.endsWith("/")) {
-                        ZipEntry zipEntry = new ZipEntry(relativeObjectName);
-                        zipOutputStream.putNextEntry(zipEntry);
-                        zipOutputStream.closeEntry();
-                    } else {
-                        ZipEntry entry = new ZipEntry(relativeObjectName);
-                        zipOutputStream.putNextEntry(entry);
+                    ZipEntry entry = new ZipEntry(relativeName);
+                    zip.putNextEntry(entry);
 
-                        try (InputStream is = minioClient.getObject(
-                                GetObjectArgs.builder()
-                                        .bucket(minioProperties.getBucket())
-                                        .object(fullObjectName)
-                                        .build()
-                        )) {
+                    if (!fullName.endsWith("/")) {
+                        try (InputStream is = downloadFile(fullName).getInputStream()) {
                             byte[] buffer = new byte[8192];
-                            int len;
-                            while ((len = is.read(buffer)) > 0) {
-                                zipOutputStream.write(buffer, 0, len);
+                            int length;
+                            while ((length = is.read(buffer)) > 0) {
+                                zip.write(buffer, 0, length);
                             }
                         }
-                        zipOutputStream.closeEntry();
                     }
+                    zip.closeEntry();
                 }
             }
-            byte[] zipBytes = byteArrayOutputStream.toByteArray();
 
-            return new InputStreamResource(new ByteArrayInputStream(zipBytes));
+            return new InputStreamResource(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
         } catch (ErrorResponseException exception) {
 
             throwResourceNotFoundExceptionIfNotFound(path, exception);
@@ -258,7 +307,7 @@ public class MinioRepository {
             return new FileInfoDto(parentPath,
                     name,
                     isDirectory ? null : statObjectArgs.size(),
-                    isDirectory ? "DIRECTORY" : "FILE");
+                    isDirectory ? DIRECTORY : FILE);
         } catch (ErrorResponseException exception) {
 
             throwResourceNotFoundExceptionIfNotFound(path, exception);
@@ -303,7 +352,7 @@ public class MinioRepository {
                             .path(parentRelativePath)
                             .name(namePart)
                             .size(isDirectory ? null : item.size())
-                            .type(isDirectory ? "DIRECTORY" : "FILE")
+                            .type(isDirectory ? DIRECTORY : FILE)
                             .build();
 
                     fileInfoDtos.add(dto);
@@ -332,7 +381,7 @@ public class MinioRepository {
         Optional<User> user = userRepository.findByUsername(name);
         if (user.isPresent()) {
             Integer userId = user.get().getId();
-            return String.format("user-%d-files/", userId);
+            return String.format(USER_PREFIX_FORMAT, userId);
         } else {
             throw new UsernameNotFoundException("User not found");
         }
@@ -356,7 +405,7 @@ public class MinioRepository {
     }
 
     private static void throwResourceNotFoundExceptionIfNotFound(String path, ErrorResponseException exception) {
-        if ("NoSuchKey".equals(exception.errorResponse().code())) {
+        if (NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
             throw new ResourceNotFoundException("File '" + path + "' not found");
         }
     }
@@ -371,11 +420,27 @@ public class MinioRepository {
 
             throw new ResourceAlreadyExistsException("Resource already exists");
         } catch (ErrorResponseException exception) {
-            if (!"NoSuchKey".equals(exception.errorResponse().code())) {
+            if (!NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
                 throw new ResourceNotFoundException("Minio error: " + exception.errorResponse().message());
             }
         } catch (Exception exception) {
             throw new StorageException("Error checking new path: " + exception.getMessage());
+        }
+    }
+
+    private void checkFileExistence(String prefix) {
+        try {
+            minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(minioProperties.getBucket())
+                    .object(prefix)
+                    .build()
+            );
+        } catch (ErrorResponseException exception) {
+            if (NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
+                throw new ResourceNotFoundException("Не удалось найти указанный файл.");
+            }
+        } catch (Exception exception) {
+            throw new StorageException("Неизвестная ошибка: " + exception.getMessage());
         }
     }
 }

@@ -29,30 +29,30 @@ services:
       - minio-data:/data
     command:
       server /data --console-address ":9001"
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app
-    restart: always
-    depends_on:
-      - postgres
-      - minio
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloud_storage
-      SPRING_DATASOURCE_USERNAME: db_user
-      SPRING_DATASOURCE_PASSWORD: password
-
-      MINIO_URL: http://minio:9000
-      MINIO_ACCESS_KEY: minio_user
-      MINIO_SECRET_KEY: password
-      MINIO_BUCKET: user-files
-
-      SERVER_PORT: 8090
-    ports:
-      - "8090:8090"
-    networks:
-      - application-network
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: app
+#    restart: always
+#    depends_on:
+#      - postgres
+#      - minio
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloud_storage
+#      SPRING_DATASOURCE_USERNAME: db_user
+#      SPRING_DATASOURCE_PASSWORD: password
+#
+#      MINIO_URL: http://minio:9000
+#      MINIO_ACCESS_KEY: minio_user
+#      MINIO_SECRET_KEY: password
+#      MINIO_BUCKET: user-files
+#
+#      SERVER_PORT: 8090
+#    ports:
+#      - "8090:8090"
+#    networks:
+#      - application-network
 
 
 networks:

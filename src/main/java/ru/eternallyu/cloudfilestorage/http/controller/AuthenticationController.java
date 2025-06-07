@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.eternallyu.cloudfilestorage.dto.request.UserRequestDto;
 import ru.eternallyu.cloudfilestorage.dto.response.UserResponseDto;
 import ru.eternallyu.cloudfilestorage.service.AuthService;
-import ru.eternallyu.cloudfilestorage.service.UserService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,13 +16,12 @@ import ru.eternallyu.cloudfilestorage.service.UserService;
 public class AuthenticationController {
 
     private final AuthService authService;
-    private final UserService userService;
 
     @PostMapping("/sign-up")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     UserResponseDto signUp(@Valid @RequestBody UserRequestDto userRequestDto) {
-        return userService.saveUser(userRequestDto);
+        return authService.signUp(userRequestDto);
     }
 
     @PostMapping("/sign-in")
