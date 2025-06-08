@@ -18,7 +18,6 @@ import ru.eternallyu.cloudfilestorage.entity.User;
 import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
 import ru.eternallyu.cloudfilestorage.mapper.UserMapper;
 import ru.eternallyu.cloudfilestorage.repository.MinioRepository;
-import ru.eternallyu.cloudfilestorage.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +29,6 @@ public class AuthService {
 
     private final UserService userService;
     private final UserMapper userMapper;
-    private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
     private final MinioRepository minioRepository;
@@ -61,12 +59,7 @@ public class AuthService {
 
         User user = userMapper.toUser(userRequestDto);
 
-        User savedUser;
-        try {
-            savedUser = userRepository.save(user);
-        } catch (DataIntegrityViolationException exception) {
-            throw new UserAlreadyExistsException("User already exists");
-        }
+        User savedUser = userService.saveUser(user);
 
         minioRepository.createUserRootFolder(user.getUsername());
 

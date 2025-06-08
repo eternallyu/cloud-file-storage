@@ -16,6 +16,8 @@ import ru.eternallyu.cloudfilestorage.service.ResourceService;
 
 import java.util.List;
 
+import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
+
 @RestController
 @RequestMapping("/api/resource")
 @RequiredArgsConstructor
@@ -25,33 +27,21 @@ public class FileController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    FileInfoDto
-    getFileInfo(
-            @RequestParam String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    FileInfoDto getFileInfo(@RequestParam String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
         return resourceService.getFileInfo(path, username);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteFile(
-            @RequestParam String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    void deleteFile(@RequestParam String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
         resourceService.deleteFile(path, username);
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public List<FileInfoDto> createFile(
-            @RequestParam("path") String path,
-            @RequestPart("object") List<MultipartFile> file,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    public List<FileInfoDto> createFile(@RequestParam("path") String path, @RequestPart("object") List<MultipartFile> file, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         long maxFileSize = 5 * 1024 * 1024;
         if (file.size() > maxFileSize) {
             throw new MaxUploadSizeExceededException(maxFileSize);
@@ -63,13 +53,7 @@ public class FileController {
 
     @GetMapping("/download")
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    InputStreamResource
-    downloadFile(
-            @RequestParam String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails,
-            HttpServletResponse response
-    ) {
+    InputStreamResource downloadFile(@RequestParam String path, @AuthenticationPrincipal CustomUserDetails customUserDetails, HttpServletResponse response) {
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         setContentDisposition(path, response);
 
@@ -80,13 +64,7 @@ public class FileController {
 
     @GetMapping("/move")
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    FileInfoDto
-    moveOrRenameResource(
-            @RequestParam String from,
-            @RequestParam String to,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    FileInfoDto moveOrRenameResource(@RequestParam String from, @RequestParam String to, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
 
         resourceService.moveOrRenameResource(from, to, username);
@@ -96,12 +74,7 @@ public class FileController {
 
     @GetMapping("/search")
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    List<FileInfoDto>
-    search(
-            @RequestParam String query,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    List<FileInfoDto> search(@RequestParam String query, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
 
         return resourceService.searchByQuery(query, username);
@@ -109,7 +82,7 @@ public class FileController {
 
     private static void setContentDisposition(String path, HttpServletResponse response) {
         String filename;
-        if (path.endsWith("/")) {
+        if (isDirectory(path)) {
             String withoutSlash = path.substring(0, path.length() - 1);
             filename = withoutSlash.substring(withoutSlash.lastIndexOf('/') + 1);
         } else {

@@ -6,7 +6,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -18,85 +17,65 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StorageException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    ErrorResponseDto
-    handleStorageException(StorageException exception) {
+    ErrorResponseDto handleStorageException(StorageException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ResponseBody
-    ErrorResponseDto
-    resourceNotFound(ResourceNotFoundException exception) {
+    ErrorResponseDto resourceNotFound(ResourceNotFoundException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    @ResponseBody
-    ErrorResponseDto
-    handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
+    ErrorResponseDto handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    @ResponseBody
-    ErrorResponseDto
-    handleResourceAlreadyExistsException(ResourceAlreadyExistsException exception) {
+    ErrorResponseDto handleResourceAlreadyExistsException(ResourceAlreadyExistsException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    ErrorResponseDto
-    handleAllOtherExceptions(Exception exception) {
+    ErrorResponseDto handleAllOtherExceptions(Exception exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
-    @ResponseBody
-    ErrorResponseDto
-    handleMaxUploadSizeExceededException() {
+    ErrorResponseDto handleMaxUploadSizeExceededException() {
         return new ErrorResponseDto("Размер файла слишком большой");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    ErrorResponseDto
-    handleMethodArgumentNotValidException() {
-        return new ErrorResponseDto("Username and password must be between 5 and 20 characters");
+    ErrorResponseDto handleMethodArgumentNotValidException() {
+        return new ErrorResponseDto("Имя пользователя и пароль должны содержать от 5 до 20 символов");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ResponseBody
-    ErrorResponseDto
-    handleAccessDeniedException() {
-        return new ErrorResponseDto("Access denied");
+    ErrorResponseDto handleAccessDeniedException() {
+        return new ErrorResponseDto("Доступ запрещён");
     }
 
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ResponseBody
-    ErrorResponseDto
-    handleBadCredentialsException(BadCredentialsException exception) {
+    ErrorResponseDto handleBadCredentialsException(BadCredentialsException exception) {
         Throwable cause = exception.getCause();
         if (cause instanceof UsernameNotFoundException) {
             return new ErrorResponseDto(exception.getMessage());
         }
-        return new ErrorResponseDto("Invalid password");
+        return new ErrorResponseDto("Неверный пароль");
     }
 
     @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ResponseBody
-    ErrorResponseDto
-    handleBadRequestException(BadRequestException exception) {
+    ErrorResponseDto handleBadRequestException(BadRequestException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 }

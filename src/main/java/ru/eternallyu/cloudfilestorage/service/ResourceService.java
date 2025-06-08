@@ -12,6 +12,7 @@ import ru.eternallyu.cloudfilestorage.repository.MinioRepository;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validatePath;
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validateQuery;
 
@@ -22,26 +23,26 @@ public class ResourceService {
     private final MinioRepository minioRepository;
 
     public FileInfoDto getFileInfo(String relativePath, String username) {
-        validatePath(relativePath);
 
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullPath = userRoot + relativePath;
 
-        if (!fullPath.startsWith(userRoot)) {
-            throw new ResourceNotFoundException("Ресурс не найден");
-        }
+        validatePath(fullPath);
+        checkStartsWithUserRoot(!fullPath.startsWith(userRoot));
 
         return minioRepository.getResourceInfo(fullPath);
     }
 
+
     public void deleteFile(String relativePath, String username) {
-        validatePath(relativePath);
+
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullPath = userRoot + relativePath;
-        if (!fullPath.startsWith(userRoot)) {
-            throw new ResourceNotFoundException("Ресурс не найден");
-        }
-        if (relativePath.endsWith("/")) {
+
+        validatePath(fullPath);
+        checkStartsWithUserRoot(!fullPath.startsWith(userRoot));
+
+        if (isDirectory(relativePath)) {
             minioRepository.deleteFolder(fullPath);
         } else {
             minioRepository.deleteFile(fullPath);
@@ -49,13 +50,14 @@ public class ResourceService {
     }
 
     public InputStreamResource downloadFile(String relativePath, String username) {
-        validatePath(relativePath);
+
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullPath = userRoot + relativePath;
-        if (!fullPath.startsWith(userRoot)) {
-            throw new ResourceNotFoundException("Ресурс не найден");
-        }
-        boolean isDirectory = relativePath.endsWith("/");
+
+        validatePath(fullPath);
+        checkStartsWithUserRoot(!fullPath.startsWith(userRoot));
+
+        boolean isDirectory = isDirectory(relativePath);
         if (isDirectory) {
             return minioRepository.downloadFolder(fullPath);
         } else {
@@ -64,18 +66,16 @@ public class ResourceService {
     }
 
     public void moveOrRenameResource(String relativeFrom, String relativeTo, String username) {
-        validatePath(relativeFrom);
-        validatePath(relativeTo);
 
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullFrom = userRoot + relativeFrom;
         String fullTo = userRoot + relativeTo;
 
-        if (!fullFrom.startsWith(userRoot) || !fullTo.startsWith(userRoot)) {
-            throw new ResourceNotFoundException("Ресурс не найден");
-        }
+        validatePath(fullFrom);
+        validatePath(fullTo);
+        checkStartsWithUserRoot(!fullFrom.startsWith(userRoot) || !fullTo.startsWith(userRoot));
 
-        boolean isDir = relativeFrom.endsWith("/");
+        boolean isDir = isDirectory(relativeFrom);
         if (isDir) {
             minioRepository.renameFolder(fullFrom, fullTo);
         } else {
@@ -85,6 +85,7 @@ public class ResourceService {
 
     public List<FileInfoDto> searchByQuery(String query, String username) {
         validateQuery(query);
+
         return minioRepository.searchInUserSpace(query, username);
     }
 
@@ -92,9 +93,9 @@ public class ResourceService {
 
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullDir = userRoot + relativeDir;
-        if (!fullDir.startsWith(userRoot)) {
-            throw new ResourceNotFoundException("Ресурс не найден");
-        }
+
+        validatePath(fullDir);
+        checkStartsWithUserRoot(!fullDir.startsWith(userRoot));
 
         List<FileInfoDto> result = new ArrayList<>();
         for (MultipartFile fileItem : file) {
@@ -117,5 +118,11 @@ public class ResourceService {
             result.add(minioRepository.getResourceInfo(fullPath));
         }
         return result;
+    }
+
+    private static void checkStartsWithUserRoot(boolean notStartsWithUserRoot) {
+        if (notStartsWithUserRoot) {
+            throw new ResourceNotFoundException("Ресурс не найден");
+        }
     }
 }

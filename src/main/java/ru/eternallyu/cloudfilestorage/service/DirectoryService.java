@@ -17,13 +17,11 @@ public class DirectoryService {
 
     public FileInfoDto createEmptyDirectory(String path, String username) {
 
-        if (!path.endsWith("/")) {
+        if (!isDirectory(path)) {
             path = path + "/";
         }
 
-        String userRoot = minioRepository.getUserRootFolderName(username);
-        String fullPath = userRoot + path;
-
+        String fullPath = getFullPath(path, username);
         validatePath(fullPath);
 
         minioRepository.createDirectory(fullPath);
@@ -33,10 +31,19 @@ public class DirectoryService {
 
     public List<FileInfoDto> getDirectoryInfo(String path, String username) {
 
-        String userRoot = minioRepository.getUserRootFolderName(username);
-        String fullPath  = userRoot + path;
+        String fullPath = getFullPath(path, username);
+        validatePath(fullPath);
 
         return minioRepository.getFileInfoDtoList(fullPath, path);
 
+    }
+
+    public static boolean isDirectory(String path) {
+        return path.endsWith("/");
+    }
+
+    public String getFullPath(String path, String username) {
+        String userRoot = minioRepository.getUserRootFolderName(username);
+        return userRoot + path;
     }
 }

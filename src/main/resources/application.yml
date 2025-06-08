@@ -1,4 +1,6 @@
 spring:
+  session:
+    store-type: redis
   servlet:
     multipart:
       max-file-size: 100MB
@@ -15,6 +17,11 @@ spring:
       show_sql: true
       format_sql: true
       hbm2ddl.auto: validate
+  data:
+    redis:
+      host: redis
+      port: 6379
+
 
 minio:
   url: http://localhost:9000

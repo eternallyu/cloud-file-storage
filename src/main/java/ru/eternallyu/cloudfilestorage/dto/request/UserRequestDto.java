@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserRequestDto {
 
-    @Size(min = 5, max = 20, message = "Username must be between 5 and 20 characters.")
+    @Size(min = 5, max = 20, message = "Имя пользователя и пароль должны содержать от 5 до 20 символов")
     @NotBlank
     String username;
 
-    @Size(min = 5, max = 20, message = "Password must be between 5 and 20 characters.")
+    @Size(min = 5, max = 20, message = "Имя пользователя и пароль должны содержать от 5 до 20 символов")
     @NotBlank
     String password;
 }

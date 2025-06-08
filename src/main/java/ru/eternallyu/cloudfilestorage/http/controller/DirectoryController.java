@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.security.CustomUserDetails;
 import ru.eternallyu.cloudfilestorage.service.DirectoryService;
-import ru.eternallyu.cloudfilestorage.service.ResourceService;
 
 import java.util.List;
 
@@ -21,24 +20,14 @@ public class DirectoryController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
-    List<FileInfoDto>
-    getDirectoryInfo(
-            @RequestParam(defaultValue = "") String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    List<FileInfoDto> getDirectoryInfo(@RequestParam(defaultValue = "") String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
         return directoryService.getDirectoryInfo(path, username);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @ResponseBody
-    FileInfoDto
-    createEmptyDirectory(
-            @RequestParam @NotBlank String path,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails
-    ) {
+    FileInfoDto createEmptyDirectory(@RequestParam @NotBlank String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
         return directoryService.createEmptyDirectory(path, username);
     }

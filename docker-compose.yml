@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - application-network
+    volumes:
+      - ./redis-data:/data
   postgres:
     image: postgres:17
     container_name: postgres
@@ -38,6 +48,7 @@ services:
     depends_on:
       - postgres
       - minio
+      - redis
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cloud_storage
       SPRING_DATASOURCE_USERNAME: db_user
@@ -47,6 +58,10 @@ services:
       MINIO_ACCESS_KEY: minio_user
       MINIO_SECRET_KEY: password
       MINIO_BUCKET: user-files
+
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_SESSION_STORE_TYPE: redis
 
       SERVER_PORT: 8090
     ports:
@@ -63,3 +78,4 @@ networks:
 volumes:
   postgres-data:
   minio-data:
+  redis:
