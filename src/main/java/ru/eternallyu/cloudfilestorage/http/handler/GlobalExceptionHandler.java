@@ -3,6 +3,7 @@ package ru.eternallyu.cloudfilestorage.http.handler;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,7 +69,7 @@ public class GlobalExceptionHandler {
     ErrorResponseDto handleBadCredentialsException(BadCredentialsException exception) {
         Throwable cause = exception.getCause();
         if (cause instanceof UsernameNotFoundException) {
-            return new ErrorResponseDto(exception.getMessage());
+            return new ErrorResponseDto("Неверные данные");
         }
         return new ErrorResponseDto("Неверный пароль");
     }
@@ -77,5 +78,11 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ErrorResponseDto handleBadRequestException(BadRequestException exception) {
         return new ErrorResponseDto(exception.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    ErrorResponseDto handleAuthenticationException() {
+        return new ErrorResponseDto("Неверные данные");
     }
 }
