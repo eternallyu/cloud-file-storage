@@ -3,7 +3,6 @@ package ru.eternallyu.cloudfilestorage.service;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 import ru.eternallyu.cloudfilestorage.dto.request.UserRequestDto;
 import ru.eternallyu.cloudfilestorage.dto.response.UserResponseDto;
 import ru.eternallyu.cloudfilestorage.entity.User;
-import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
 import ru.eternallyu.cloudfilestorage.mapper.UserMapper;
 import ru.eternallyu.cloudfilestorage.repository.MinioRepository;
 

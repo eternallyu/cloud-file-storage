@@ -1,6 +1,7 @@
 package ru.eternallyu.cloudfilestorage.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import ru.eternallyu.cloudfilestorage.dto.response.UserResponseDto;
@@ -9,6 +10,7 @@ import ru.eternallyu.cloudfilestorage.error.UserAlreadyExistsException;
 import ru.eternallyu.cloudfilestorage.mapper.UserMapper;
 import ru.eternallyu.cloudfilestorage.repository.UserRepository;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -22,7 +24,9 @@ public class UserService {
     }
 
     public User saveUser(User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+        String username = user.getUsername();
+        if (userRepository.findByUsername(username).isPresent()) {
+            log.warn("User already exists, username={}", username);
             throw new UserAlreadyExistsException("Пользователь с таким именем уже существует");
         }
         return userRepository.save(user);

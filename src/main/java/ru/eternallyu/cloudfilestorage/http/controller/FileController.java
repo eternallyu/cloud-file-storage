@@ -2,6 +2,7 @@ package ru.eternallyu.cloudfilestorage.http.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.List;
 
 import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/resource")
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class FileController {
     @ResponseStatus(HttpStatus.OK)
     FileInfoDto getFileInfo(@RequestParam String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
+        log.info("Getting file info, username={}", username);
         return resourceService.getFileInfo(path, username);
     }
 
@@ -36,6 +39,7 @@ public class FileController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteFile(@RequestParam String path, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
+        log.info("Deleting file, username={}", username);
         resourceService.deleteFile(path, username);
     }
 
@@ -47,6 +51,7 @@ public class FileController {
             throw new MaxUploadSizeExceededException(maxFileSize);
         }
         String username = customUserDetails.getUsername();
+        log.info("Creating file, username={}", username);
         return resourceService.uploadResources(file, path, username);
     }
 
@@ -58,6 +63,7 @@ public class FileController {
         setContentDisposition(path, response);
 
         String username = customUserDetails.getUsername();
+        log.info("Downloading file, username={}", username);
 
         return resourceService.downloadFile(path, username);
     }
@@ -66,9 +72,9 @@ public class FileController {
     @ResponseStatus(HttpStatus.OK)
     FileInfoDto moveOrRenameResource(@RequestParam String from, @RequestParam String to, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
+        log.info("Moving or renaming file, username={}", username);
 
         resourceService.moveOrRenameResource(from, to, username);
-
         return resourceService.getFileInfo(to, username);
     }
 
@@ -76,7 +82,7 @@ public class FileController {
     @ResponseStatus(HttpStatus.OK)
     List<FileInfoDto> search(@RequestParam String query, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         String username = customUserDetails.getUsername();
-
+        log.info("Searching file, username={}", username);
         return resourceService.searchByQuery(query, username);
     }
 

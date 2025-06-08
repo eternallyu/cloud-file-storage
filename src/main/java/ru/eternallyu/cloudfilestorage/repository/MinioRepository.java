@@ -5,6 +5,7 @@ import io.minio.errors.ErrorResponseException;
 import io.minio.messages.Item;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Repository;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class MinioRepository {
@@ -51,6 +53,7 @@ public class MinioRepository {
                         .build());
             }
         } catch (Exception exception) {
+            log.error("Error during creating bucket");
             throw new StorageException("Ошибка при создании бакета: " + exception.getMessage());
         }
 
@@ -68,6 +71,7 @@ public class MinioRepository {
                             .build()
             );
         } catch (Exception exception) {
+            log.error("Error during creating user root folder");
             throw new StorageException("Ошибка при создании корневой папки: " + exception.getMessage());
         }
     }
@@ -85,6 +89,7 @@ public class MinioRepository {
                             .build()
             );
         } catch (Exception exception) {
+            log.error("Error during creating directory");
             throw new StorageException("Ошибка при создании папки: " + exception.getMessage());
         }
     }
@@ -104,6 +109,7 @@ public class MinioRepository {
                             .build()
             );
         } catch (Exception exception) {
+            log.error("Error during upload file");
             throw new StorageException("Ошибка при загрузке файла: " + exception.getMessage());
         }
     }
@@ -129,8 +135,10 @@ public class MinioRepository {
             }
         } catch (ErrorResponseException exception) {
             throwResourceNotFoundExceptionIfNotFound(prefix, exception);
+            log.error("Error during deleting folder (minio)");
             throw new StorageException("Ошибка minio при удалении папки: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during deleting folder");
             throw new StorageException("Ошибка при удалении папки: " + exception.getMessage());
         }
     }
@@ -146,8 +154,10 @@ public class MinioRepository {
         } catch (ErrorResponseException exception) {
 
             throwResourceNotFoundExceptionIfNotFound(path, exception);
+            log.error("Error during deleting file (minio)");
             throw new StorageException("Ошибка minio при удалении файла: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during deleting file");
             throw new StorageException("Ошибка при удалении файла: " + exception.getMessage());
         }
     }
@@ -174,6 +184,7 @@ public class MinioRepository {
             try {
                 item = maybeItem.get();
             } catch (Exception exception) {
+                log.error("Error during getting file");
                 throw new StorageException("Ошибка при получении файла: " + exception.getMessage());
             }
 
@@ -209,8 +220,10 @@ public class MinioRepository {
                     .build());
         } catch (ErrorResponseException exception) {
             throwResourceNotFoundExceptionIfNotFound(oldPath, exception);
+            log.error("Error during stat file (minio)");
             throw new StorageException("Ошибка minio при переименовании файла: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during stat file");
             throw new StorageException("Ошибка при переименовании файла: " + exception.getMessage());
         }
 
@@ -228,8 +241,10 @@ public class MinioRepository {
         } catch (ErrorResponseException exception) {
 
             throwResourceNotFoundExceptionIfNotFound(oldPath, exception);
+            log.error("Error during rename file (minio)");
             throw new StorageException("Ошибка minio при переименовании файла: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during rename file");
             throw new StorageException("Ошибка при переименовании файла: " + exception.getMessage());
         }
         deleteFile(oldPath);
@@ -253,6 +268,7 @@ public class MinioRepository {
 
             }
         } catch (Exception exception) {
+            log.error("Error during rename folder");
             throw new StorageException("Ошибка при переименовании папки: " + exception.getMessage());
         }
     }
@@ -267,8 +283,10 @@ public class MinioRepository {
             );
         } catch (ErrorResponseException exception) {
             throwResourceNotFoundExceptionIfNotFound(path, exception);
+            log.error("Error during download file (minio)");
             throw new StorageException("Ошибка minio при скачивании файла: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during download file");
             throw new StorageException("Ошибка при скачивании файла: " + exception.getMessage());
         }
     }
@@ -310,10 +328,11 @@ public class MinioRepository {
 
             return new InputStreamResource(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()));
         } catch (ErrorResponseException exception) {
-
             throwResourceNotFoundExceptionIfNotFound(path, exception);
+            log.error("Error during download folder (minio)");
             throw new StorageException("Ошибка minio при скачивании папки: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during download folder");
             throw new StorageException("Ошибка при скачивании папки: " + exception.getMessage());
         }
     }
@@ -335,10 +354,11 @@ public class MinioRepository {
                     isDirectory ? null : statObjectArgs.size(),
                     isDirectory ? DIRECTORY : FILE);
         } catch (ErrorResponseException exception) {
-
             throwResourceNotFoundExceptionIfNotFound(path, exception);
+            log.error("Error during get file info (minio)");
             throw new StorageException("Ошибка minio при получении информации о файле: " + exception.errorResponse().message());
         } catch (Exception exception) {
+            log.error("Error during get file info");
             throw new StorageException("Ошибка при получении информации о файле: " + exception.getMessage());
         }
     }
@@ -389,6 +409,7 @@ public class MinioRepository {
                 }
             }
         } catch (Exception exception) {
+            log.error("Error during search in user space");
             throw new StorageException("Ошибка при поиске файлов: " + exception.getMessage());
         }
 
@@ -413,6 +434,7 @@ public class MinioRepository {
             Integer userId = user.get().getId();
             return String.format("user-%d-files/", userId);
         } else {
+            log.warn("User not found");
             throw new UsernameNotFoundException("Пользователь не найден");
         }
     }
@@ -436,6 +458,7 @@ public class MinioRepository {
 
     private static void throwResourceNotFoundExceptionIfNotFound(String path, ErrorResponseException exception) {
         if (NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
+            log.warn("File not found: {}", path);
             throw new ResourceNotFoundException("Файл '" + path + "' не найден");
         }
     }
@@ -448,14 +471,17 @@ public class MinioRepository {
                     .build()
             );
 
+            log.warn("Resource already exists");
             throw new ResourceAlreadyExistsException("Файл уже существует");
         } catch (ErrorResponseException exception) {
             if (!NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
                 throw new ResourceNotFoundException("Ошибка: " + exception.errorResponse().message());
             }
         } catch (ResourceAlreadyExistsException exception) {
+            log.error("Resource already exists");
             throw new ResourceAlreadyExistsException(exception.getMessage());
         } catch (Exception exception) {
+            log.error("Error during check emptiness of path");
             throw new StorageException("Ошибка: " + exception.getMessage());
         }
     }
@@ -472,6 +498,7 @@ public class MinioRepository {
                 throw new ResourceNotFoundException("Не удалось найти указанный файл.");
             }
         } catch (Exception exception) {
+            log.error("Error during check file existence");
             throw new StorageException("Неизвестная ошибка: " + exception.getMessage());
         }
     }

@@ -1,6 +1,7 @@
 package ru.eternallyu.cloudfilestorage.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +17,7 @@ import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirector
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validatePath;
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validateQuery;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResourceService {
@@ -67,12 +69,13 @@ public class ResourceService {
 
     public void moveOrRenameResource(String relativeFrom, String relativeTo, String username) {
 
+        validatePath(relativeFrom);
+        validatePath(relativeTo);
+
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullFrom = userRoot + relativeFrom;
         String fullTo = userRoot + relativeTo;
 
-        validatePath(fullFrom);
-        validatePath(fullTo);
         checkStartsWithUserRoot(!fullFrom.startsWith(userRoot) || !fullTo.startsWith(userRoot));
 
         boolean isDir = isDirectory(relativeFrom);
@@ -101,6 +104,7 @@ public class ResourceService {
         for (MultipartFile fileItem : file) {
             String originalName = fileItem.getOriginalFilename();
             if (originalName == null || originalName.isBlank()) {
+                log.warn("File name is null or empty");
                 throw new BadRequestException("Имя файла пустое");
             }
             String fullPath = fullDir + originalName;
@@ -122,6 +126,7 @@ public class ResourceService {
 
     private static void checkStartsWithUserRoot(boolean notStartsWithUserRoot) {
         if (notStartsWithUserRoot) {
+            log.warn("File not found");
             throw new ResourceNotFoundException("Ресурс не найден");
         }
     }
