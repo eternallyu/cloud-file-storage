@@ -14,7 +14,7 @@ import ru.eternallyu.cloudfilestorage.config.minio.MinioProperties;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.entity.User;
 import ru.eternallyu.cloudfilestorage.error.ResourceAlreadyExistsException;
-import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
+import ru.eternallyu.cloudfilestorage.error.NotFoundException;
 import ru.eternallyu.cloudfilestorage.error.StorageException;
 
 import java.io.ByteArrayInputStream;
@@ -459,7 +459,7 @@ public class MinioRepository {
     private static void throwResourceNotFoundExceptionIfNotFound(String path, ErrorResponseException exception) {
         if (NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
             log.warn("File not found: {}", path);
-            throw new ResourceNotFoundException("Файл '" + path + "' не найден");
+            throw new NotFoundException("Файл '" + path + "' не найден");
         }
     }
 
@@ -475,7 +475,7 @@ public class MinioRepository {
             throw new ResourceAlreadyExistsException("Файл уже существует");
         } catch (ErrorResponseException exception) {
             if (!NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
-                throw new ResourceNotFoundException("Ошибка: " + exception.errorResponse().message());
+                throw new NotFoundException("Ошибка: " + exception.errorResponse().message());
             }
         } catch (ResourceAlreadyExistsException exception) {
             log.error("Resource already exists");
@@ -495,7 +495,7 @@ public class MinioRepository {
             );
         } catch (ErrorResponseException exception) {
             if (NO_SUCH_KEY_ERROR.equals(exception.errorResponse().code())) {
-                throw new ResourceNotFoundException("Не удалось найти указанный файл.");
+                throw new NotFoundException("Не удалось найти указанный файл.");
             }
         } catch (Exception exception) {
             log.error("Error during check file existence");

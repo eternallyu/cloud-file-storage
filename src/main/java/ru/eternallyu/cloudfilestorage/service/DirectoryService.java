@@ -13,12 +13,13 @@ import static ru.eternallyu.cloudfilestorage.util.PathValidator.validatePath;
 @RequiredArgsConstructor
 public class DirectoryService {
 
+    public static final String SLASH = "/";
     private final MinioRepository minioRepository;
 
     public FileInfoDto createEmptyDirectory(String path, String username) {
 
         if (!isDirectory(path)) {
-            path = path + "/";
+            path = path + SLASH;
         }
 
         String fullPath = getFullPath(path, username);
@@ -35,11 +36,10 @@ public class DirectoryService {
         validatePath(fullPath);
 
         return minioRepository.getFileInfoDtoList(fullPath, path);
-
     }
 
     public static boolean isDirectory(String path) {
-        return path.endsWith("/");
+        return path.endsWith(SLASH);
     }
 
     public String getFullPath(String path, String username) {

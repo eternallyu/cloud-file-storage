@@ -6,14 +6,16 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
-import ru.eternallyu.cloudfilestorage.error.BadRequestException;
-import ru.eternallyu.cloudfilestorage.error.ResourceNotFoundException;
+import ru.eternallyu.cloudfilestorage.error.NotFoundException;
 import ru.eternallyu.cloudfilestorage.repository.MinioRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static ru.eternallyu.cloudfilestorage.service.DirectoryService.SLASH;
 import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
+import static ru.eternallyu.cloudfilestorage.util.FileValidator.validateFiles;
+import static ru.eternallyu.cloudfilestorage.util.FileValidator.validateOriginalFileName;
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validatePath;
 import static ru.eternallyu.cloudfilestorage.util.PathValidator.validateQuery;
 
@@ -93,6 +95,7 @@ public class ResourceService {
     }
 
     public List<FileInfoDto> uploadResources(List<MultipartFile> file, String relativeDir, String username) {
+        validateFiles(file);
 
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullDir = userRoot + relativeDir;
@@ -103,16 +106,15 @@ public class ResourceService {
         List<FileInfoDto> result = new ArrayList<>();
         for (MultipartFile fileItem : file) {
             String originalName = fileItem.getOriginalFilename();
-            if (originalName == null || originalName.isBlank()) {
-                log.warn("File name is null or empty");
-                throw new BadRequestException("Имя файла пустое");
-            }
+
+            validateOriginalFileName(originalName);
+
             String fullPath = fullDir + originalName;
-            if (originalName.contains("/")) {
-                String[] parts = originalName.split("/");
+            if (originalName.contains(SLASH)) {
+                String[] parts = originalName.split(SLASH);
                 String accum = fullDir;
                 for (int i = 0; i < parts.length - 1; i++) {
-                    accum += parts[i] + "/";
+                    accum += parts[i] + SLASH;
                     minioRepository.createDirectory(accum);
                     result.add(minioRepository.getResourceInfo(accum));
                 }
@@ -127,7 +129,7 @@ public class ResourceService {
     private static void checkStartsWithUserRoot(boolean notStartsWithUserRoot) {
         if (notStartsWithUserRoot) {
             log.warn("File not found");
-            throw new ResourceNotFoundException("Ресурс не найден");
+            throw new NotFoundException("Ресурс не найден");
         }
     }
 }

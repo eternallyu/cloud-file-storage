@@ -33,8 +33,7 @@ public class AuthService {
 
     public UserResponseDto signIn(UserRequestDto userRequestDto, HttpServletRequest request, HttpServletResponse response) {
 
-        Authentication auth = authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(), userRequestDto.getPassword()));
+        Authentication auth = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userRequestDto.getUsername(), userRequestDto.getPassword()));
         SecurityContext context = securityContextHolderStrategy.createEmptyContext();
         context.setAuthentication(auth);
         securityContextHolderStrategy.setContext(context);
@@ -44,11 +43,7 @@ public class AuthService {
         return userService.findByUsername(userRequestDto.getUsername());
     }
 
-    public UserResponseDto signUp(
-            UserRequestDto userRequestDto,
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
+    public UserResponseDto signUp(UserRequestDto userRequestDto, HttpServletRequest request, HttpServletResponse response) {
 
         String rawPassword = userRequestDto.getPassword();
 
@@ -61,10 +56,6 @@ public class AuthService {
 
         minioRepository.createUserRootFolder(user.getUsername());
 
-        return signIn(
-                new UserRequestDto(savedUser.getUsername(), rawPassword),
-                request,
-                response
-        );
+        return signIn(new UserRequestDto(savedUser.getUsername(), rawPassword), request, response);
     }
 }

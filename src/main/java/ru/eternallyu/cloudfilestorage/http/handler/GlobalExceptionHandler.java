@@ -22,9 +22,9 @@ public class GlobalExceptionHandler {
         return new ErrorResponseDto(exception.getMessage());
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    ErrorResponseDto resourceNotFound(ResourceNotFoundException exception) {
+    ErrorResponseDto resourceNotFound(NotFoundException exception) {
         return new ErrorResponseDto(exception.getMessage());
     }
 

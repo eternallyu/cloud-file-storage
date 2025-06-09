@@ -1,11 +1,11 @@
 package ru.eternallyu.cloudfilestorage.util;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import ru.eternallyu.cloudfilestorage.error.BadRequestException;
 
 @Slf4j
-@Component
+@UtilityClass
 public class PathValidator {
 
     public static void validatePath(String path) {

@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,7 +16,7 @@ import ru.eternallyu.cloudfilestorage.service.ResourceService;
 
 import java.util.List;
 
-import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
+import static ru.eternallyu.cloudfilestorage.util.ControllerUtils.setContentDisposition;
 
 @Slf4j
 @RestController
@@ -46,10 +45,6 @@ public class FileController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public List<FileInfoDto> createFile(@RequestParam("path") String path, @RequestPart("object") List<MultipartFile> file, @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-        long maxFileSize = 5 * 1024 * 1024;
-        if (file.size() > maxFileSize) {
-            throw new MaxUploadSizeExceededException(maxFileSize);
-        }
         String username = customUserDetails.getUsername();
         log.info("Creating file, username={}", username);
         return resourceService.uploadResources(file, path, username);
@@ -84,17 +79,5 @@ public class FileController {
         String username = customUserDetails.getUsername();
         log.info("Searching file, username={}", username);
         return resourceService.searchByQuery(query, username);
-    }
-
-    private static void setContentDisposition(String path, HttpServletResponse response) {
-        String filename;
-        if (isDirectory(path)) {
-            String withoutSlash = path.substring(0, path.length() - 1);
-            filename = withoutSlash.substring(withoutSlash.lastIndexOf('/') + 1);
-        } else {
-            filename = path.substring(path.lastIndexOf('/') + 1);
-        }
-
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"");
     }
 }
