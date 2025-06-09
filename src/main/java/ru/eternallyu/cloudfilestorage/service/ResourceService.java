@@ -7,11 +7,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.eternallyu.cloudfilestorage.dto.file.FileInfoDto;
 import ru.eternallyu.cloudfilestorage.error.NotFoundException;
+import ru.eternallyu.cloudfilestorage.error.StorageException;
 import ru.eternallyu.cloudfilestorage.repository.MinioRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static ru.eternallyu.cloudfilestorage.service.DirectoryService.SLASH;
 import static ru.eternallyu.cloudfilestorage.service.DirectoryService.isDirectory;
 import static ru.eternallyu.cloudfilestorage.util.FileValidator.validateFiles;
@@ -25,6 +29,7 @@ import static ru.eternallyu.cloudfilestorage.util.PathValidator.validateQuery;
 public class ResourceService {
 
     private final MinioRepository minioRepository;
+    private final ExecutorService threadPool;
 
     public FileInfoDto getFileInfo(String relativePath, String username) {
 
@@ -94,8 +99,8 @@ public class ResourceService {
         return minioRepository.searchInUserSpace(query, username);
     }
 
-    public List<FileInfoDto> uploadResources(List<MultipartFile> file, String relativeDir, String username) {
-        validateFiles(file);
+    public List<FileInfoDto> uploadResources(List<MultipartFile> files, String relativeDir, String username) {
+        validateFiles(files);
 
         String userRoot = minioRepository.getUserRootFolderName(username);
         String fullDir = userRoot + relativeDir;
@@ -103,27 +108,44 @@ public class ResourceService {
         validatePath(fullDir);
         checkStartsWithUserRoot(!fullDir.startsWith(userRoot));
 
-        List<FileInfoDto> result = new ArrayList<>();
-        for (MultipartFile fileItem : file) {
-            String originalName = fileItem.getOriginalFilename();
+        List<CompletableFuture<List<FileInfoDto>>> futures = files
+                .stream()
+                .map(file -> supplyAsync(() -> {
+                            String originalName = file.getOriginalFilename();
 
-            validateOriginalFileName(originalName);
+                            validateOriginalFileName(originalName);
 
-            String fullPath = fullDir + originalName;
-            if (originalName.contains(SLASH)) {
-                String[] parts = originalName.split(SLASH);
-                String accum = fullDir;
-                for (int i = 0; i < parts.length - 1; i++) {
-                    accum += parts[i] + SLASH;
-                    minioRepository.createDirectory(accum);
-                    result.add(minioRepository.getResourceInfo(accum));
-                }
-            }
+                            List<FileInfoDto> uploadedFilesAndDirectories = new ArrayList<>();
 
-            minioRepository.uploadFile(fullPath, fileItem);
-            result.add(minioRepository.getResourceInfo(fullPath));
-        }
-        return result;
+                            String fullPath = fullDir + originalName;
+                            if (originalName.contains(SLASH)) {
+                                String[] parts = originalName.split(SLASH);
+                                String accum = fullDir;
+                                for (int i = 0; i < parts.length - 1; i++) {
+                                    accum += parts[i] + SLASH;
+                                    minioRepository.createDirectory(accum);
+                                    uploadedFilesAndDirectories.add(minioRepository.getResourceInfo(accum));
+                                }
+                            }
+
+                            minioRepository.uploadFile(fullPath, file);
+                            uploadedFilesAndDirectories.add(minioRepository.getResourceInfo(fullPath));
+                            return uploadedFilesAndDirectories;
+                        }, threadPool)
+                                .exceptionally(ex -> {
+                                            log.error("Upload failed for {}", file.getOriginalFilename(), ex);
+                                            throw new StorageException("Upload failed for " + file.getOriginalFilename());
+                                        }
+                                )
+                ).toList();
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        return futures
+                .stream()
+                .map(CompletableFuture::join)
+                .flatMap(List::stream)
+                .toList();
     }
 
     private static void checkStartsWithUserRoot(boolean notStartsWithUserRoot) {
